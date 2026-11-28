@@ -249,6 +249,9 @@ internal const val LINE_BOUNDARY_WAKE_WINDOW_MS = 250L
  * offscreen alpha gradient mask (BlendMode.DstIn). Eliminates abrupt hard-edge clipping as
  * lyrics scroll down toward the bottom player controls.
  */
+private const val MAX_TOP_FADE_FRACTION = 0.15f
+private const val MAX_BOTTOM_FADE_FRACTION = 0.25f
+
 internal fun Modifier.lyricsFadingEdge(
     topFadeDp: androidx.compose.ui.unit.Dp = 36.dp,
     bottomFadeDp: androidx.compose.ui.unit.Dp = 110.dp,
@@ -256,9 +259,11 @@ internal fun Modifier.lyricsFadingEdge(
     .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
     .drawWithContent {
         drawContent()
-        val topFadePx = topFadeDp.toPx()
-        val bottomFadePx = bottomFadeDp.toPx()
         val height = size.height
+        // A short viewport (landscape) would otherwise be faded out almost entirely, hiding the
+        // second line of a wrapped lyric, so keep each fade to a share of the height.
+        val topFadePx = minOf(topFadeDp.toPx(), height * MAX_TOP_FADE_FRACTION)
+        val bottomFadePx = minOf(bottomFadeDp.toPx(), height * MAX_BOTTOM_FADE_FRACTION)
         if (height > topFadePx + bottomFadePx) {
             drawRect(
                 brush = Brush.verticalGradient(
